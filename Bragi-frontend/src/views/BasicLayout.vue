@@ -357,17 +357,22 @@
     <!--------------------------------------------------------------------------------------------------->
 
 
-    <SidebarAside
+    <!-- <SidebarAside
       :title="sidebarTitle"
       :menuItems="sidebarMenuItems"
       :collapsed="sidebarCollapsed"
-    />
+    /> -->
+
+    <SearchDialog />
 
   </el-container>
 </template>
 
 <script>
-import SidebarAside from '@/components/SidebarAside.vue';
+import SearchDialog from '@/components/SearchDialog.vue'; 
+
+
+// import SidebarAside from '@/components/SidebarAside.vue';
 
 import axios from "axios";
 import global from "@/global";
