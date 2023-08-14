@@ -356,13 +356,35 @@
 
     <!--------------------------------------------------------------------------------------------------->
 
+
+    <!-- <SidebarAside
+      :title="sidebarTitle"
+      :menuItems="sidebarMenuItems"
+      :collapsed="sidebarCollapsed"
+    /> -->
+
+    <!-- <NotebooksMenu :notebooks="notebooks" @notebook-selected="handleNotebookSelected" /> -->
+
+
+    <SearchDialog />
+
   </el-container>
 </template>
 
 <script>
+// import NotebooksMenu from '@/components/NotebooksMenu.vue'; 
+
+// import SearchDialog from '@/components/SearchDialog.vue'; 
+
+
+// import SidebarAside from '@/components/SidebarAside.vue';
+
 import axios from "axios";
 import global from "@/global";
 import Vue from "vue";
+
+
+
 
 export default {
   name: "navbar",
