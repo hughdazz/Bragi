@@ -99,13 +99,13 @@ public class ArticleService implements IArticleService {
     }
 
     @Override
-    public void batchDeleteArticlesByNotebookName(String notebookName) {
-        articleRepository.deleteAllByUsernameAndNotebookName(getUsername(), notebookName);
+    public void updateArticlesNotebookName(String srcNotebook, String targetNotebook) {
+        articleRepository.updateNotebookName(getUsername(), srcNotebook, targetNotebook);
     }
 
     @Override
-    public void updateArticlesNotebookName(String srcNotebook, String targetNotebook) {
-        articleRepository.updateNotebookName(getUsername(), srcNotebook, targetNotebook);
+    public void batchDeleteArticlesByNotebookName(String notebookName) {
+        articleRepository.deleteAllByUsernameAndNotebookName(getUsername(), notebookName);
     }
 
     private String getUsername(){
@@ -117,17 +117,6 @@ public class ArticleService implements IArticleService {
         return buildUserNoteKey(notebookName, noteTitle, getUsername());
     }
 
-
-    private UserNoteKey buildUserNoteKey(String notebookName, String noteTitle, String username){
-        return new UserNoteKey().setNotebookName(notebookName).setNoteTitle(noteTitle).setUsername(username);
-    }
-
-    void invalidateCache(UserNoteKey key){
-        userNotePreviewCache.invalidate(key);
-        userNoteCache.invalidate(key);
-    }
-
-
     ArticleVo convert(ArticleDo articleDo) {
         if (articleDo == null) {
             return null;
@@ -137,6 +126,17 @@ public class ArticleService implements IArticleService {
                 .setNotebookName(articleDo.getNotebookName())
                 .setPreviewContent(previewInfo == null ? null : previewInfo.getPreviewContent())
                 .setNoteTitle(articleDo.getNoteTitle());
+    }
+
+
+
+    private UserNoteKey buildUserNoteKey(String notebookName, String noteTitle, String username){
+        return new UserNoteKey().setNotebookName(notebookName).setNoteTitle(noteTitle).setUsername(username);
+    }
+
+    void invalidateCache(UserNoteKey key){
+        userNotePreviewCache.invalidate(key);
+        userNoteCache.invalidate(key);
     }
 
 }

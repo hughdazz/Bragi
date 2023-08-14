@@ -27,13 +27,6 @@ public class LocalFileServiceImpl implements IFileService {
     private final String DIR_PREFIX = "/file/";
 
     @Override
-    public String upload(MultipartFile sourceFile) {
-
-        File targetFile = uploadFile(sourceFile);
-        return DIR_PREFIX + getUsername() + "/" + targetFile.getName();
-    }
-
-    @Override
     public File uploadFile(MultipartFile sourceFile) {
         String filename = sourceFile.getOriginalFilename();
 
@@ -52,34 +45,6 @@ public class LocalFileServiceImpl implements IFileService {
         }
 
         return targetFile;
-    }
-
-    @Override
-    public boolean writeStringToFile(String content, File targetFile){
-        return FileUtil.writeStringToFile(content, targetFile);
-    }
-
-    @Override
-    public File createTmpEmptyDir() {
-        return null;
-    }
-
-    @Override
-    public String getContentFromFile(File file){
-        return FileUtil.readFileAsString(file);
-    }
-
-    @Override
-    public void deleteFile(File file){
-        FileUtil.deleteFileOrDirectory(file);
-    }
-
-    @Override
-    public void batchDelete(List<String> fileNames) {
-        fileNames.forEach(fileName -> {
-            File file = new File(getOrInitUserFileDirectory(), fileName);
-            deleteFile(file);
-        });
     }
 
     @Override
@@ -112,6 +77,42 @@ public class LocalFileServiceImpl implements IFileService {
         }
 
         return userFileVo.setPageIndex(pageIndex).setFileDetailList(fileDetailVoList);
+    }
+
+    @Override
+    public String upload(MultipartFile sourceFile) {
+
+        File targetFile = uploadFile(sourceFile);
+        return DIR_PREFIX + getUsername() + "/" + targetFile.getName();
+    }
+
+
+    @Override
+    public boolean writeStringToFile(String content, File targetFile){
+        return FileUtil.writeStringToFile(content, targetFile);
+    }
+
+    @Override
+    public File createTmpEmptyDir() {
+        return null;
+    }
+
+    @Override
+    public String getContentFromFile(File file){
+        return FileUtil.readFileAsString(file);
+    }
+
+    @Override
+    public void deleteFile(File file){
+        FileUtil.deleteFileOrDirectory(file);
+    }
+
+    @Override
+    public void batchDelete(List<String> fileNames) {
+        fileNames.forEach(fileName -> {
+            File file = new File(getOrInitUserFileDirectory(), fileName);
+            deleteFile(file);
+        });
     }
 
     private String getUsername(){

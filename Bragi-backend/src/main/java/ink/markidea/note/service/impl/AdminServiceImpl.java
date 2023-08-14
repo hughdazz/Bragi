@@ -47,13 +47,6 @@ public class AdminServiceImpl implements IAdminService {
     private IUserService userService;
 
     @Override
-    public ServerResponse setRemoteRepoUrl(String remoteRepoUrl) {
-        userRepository.save(userRepository.findByUsername(getUsername()).setRemoteRepository(remoteRepoUrl));
-        noteTimer.refreshPushTaskList();
-        return ServerResponse.buildSuccessResponse();
-    }
-
-    @Override
     public ServerResponse stopPushToRemoteRepo(){
         userRepository.save(userRepository.findByUsername(getUsername()).setPush(false));
         noteTimer.refreshPushTaskList();
@@ -84,6 +77,18 @@ public class AdminServiceImpl implements IAdminService {
     }
 
     @Override
+    public synchronized boolean updateWebSiteConfig(WebsiteConfigReq req) {
+        WebsiteConfigDto originWebsiteConfig = getWebsiteConfig();
+        validateWebsiteConfig(req);
+        updateWebsiteTitleIfChange(req, originWebsiteConfig);
+        updateRegisterStrategyIfChange(req, originWebsiteConfig);
+        updateTokenExpireTimeIfChange(req, originWebsiteConfig);
+        File websiteConfigFile = new File(configDir, "website-config.json");
+        return FileUtil.writeStringToFile(JsonUtil.objToString(req), websiteConfigFile);
+    }
+
+
+    @Override
     public ServerResponse getRemoteRepoUrl() {
         String remoteRepoUrl = userRepository.findByUsername(getUsername()).getRemoteRepository();
         return ServerResponse.buildSuccessResponse(remoteRepoUrl);
@@ -111,14 +116,10 @@ public class AdminServiceImpl implements IAdminService {
     }
 
     @Override
-    public synchronized boolean updateWebSiteConfig(WebsiteConfigReq req) {
-        WebsiteConfigDto originWebsiteConfig = getWebsiteConfig();
-        validateWebsiteConfig(req);
-        updateWebsiteTitleIfChange(req, originWebsiteConfig);
-        updateRegisterStrategyIfChange(req, originWebsiteConfig);
-        updateTokenExpireTimeIfChange(req, originWebsiteConfig);
-        File websiteConfigFile = new File(configDir, "website-config.json");
-        return FileUtil.writeStringToFile(JsonUtil.objToString(req), websiteConfigFile);
+    public ServerResponse setRemoteRepoUrl(String remoteRepoUrl) {
+        userRepository.save(userRepository.findByUsername(getUsername()).setRemoteRepository(remoteRepoUrl));
+        noteTimer.refreshPushTaskList();
+        return ServerResponse.buildSuccessResponse();
     }
 
     private void updateTokenExpireTimeIfChange(WebsiteConfigReq req, WebsiteConfigDto originWebsiteConfig) {
