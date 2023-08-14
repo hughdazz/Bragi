@@ -363,7 +363,7 @@
       :collapsed="sidebarCollapsed"
     /> -->
 
-    <NotebooksMenu :notebooks="notebooks" @notebook-selected="handleNotebookSelected" />
+    <!-- <NotebooksMenu :notebooks="notebooks" @notebook-selected="handleNotebookSelected" /> -->
 
 
     <SearchDialog />
@@ -372,7 +372,7 @@
 </template>
 
 <script>
-import NotebooksMenu from '@/components/NotebooksMenu.vue'; 
+// import NotebooksMenu from '@/components/NotebooksMenu.vue'; 
 
 // import SearchDialog from '@/components/SearchDialog.vue'; 
 
