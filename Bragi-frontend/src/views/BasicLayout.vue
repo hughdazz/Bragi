@@ -356,13 +356,25 @@
 
     <!--------------------------------------------------------------------------------------------------->
 
+
+    <SidebarAside
+      :title="sidebarTitle"
+      :menuItems="sidebarMenuItems"
+      :collapsed="sidebarCollapsed"
+    />
+
   </el-container>
 </template>
 
 <script>
+import SidebarAside from '@/components/SidebarAside.vue';
+
 import axios from "axios";
 import global from "@/global";
 import Vue from "vue";
+
+
+
 
 export default {
   name: "navbar",
