@@ -363,13 +363,18 @@
       :collapsed="sidebarCollapsed"
     /> -->
 
+    <NotebooksMenu :notebooks="notebooks" @notebook-selected="handleNotebookSelected" />
+
+
     <SearchDialog />
 
   </el-container>
 </template>
 
 <script>
-import SearchDialog from '@/components/SearchDialog.vue'; 
+import NotebooksMenu from '@/components/NotebooksMenu.vue'; 
+
+// import SearchDialog from '@/components/SearchDialog.vue'; 
 
 
 // import SidebarAside from '@/components/SidebarAside.vue';
