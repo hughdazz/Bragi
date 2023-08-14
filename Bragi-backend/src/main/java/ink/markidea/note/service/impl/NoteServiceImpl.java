@@ -264,35 +264,12 @@ public class NoteServiceImpl implements INoteService {
         String relativeFileName = directory + "/" + name;
 
         File noteFile = new File(getOrCreateUserNotebookDir(), relativeFileName);
-//
-//
         try {
             file.transferTo(noteFile);
             noteRepository.save(new NoteDo().setUsername(getUsername()).setNotebookName(directory).setNoteTitle(name));
         } catch (IOException e) {
             throw new RuntimeException("upload file failed");
         }
-//
-//        //待实现
-////        File noteFile = new File(getOrCreateUserNotebookDir(), relativeFileName);
-
-//        File userDir  = getOrInitUserFileDirectory();
-
-//
-//        try {
-//            if (!noteFile.exists() && !noteFile.createNewFile()){
-//                throw new RuntimeException("创建失败");
-//            }
-//        } catch (IOException e) {
-//            log.error("save note error", e);
-//            throw new RuntimeException("创建失败2");
-//        }
-
-//        String content = getFileContent(file);
-//        System.out.println(content);//相对文件名
-//        //write file
-//        fileService.writeStringToFile(content,noteFile);
-
 
         GitUtil.addAndCommit(getOrCreateUserGit(), relativeFileName);
 
@@ -537,9 +514,7 @@ public class NoteServiceImpl implements INoteService {
         if (targetNotebookDir.exists()) {
             throw new PromptException("目标笔记本已存在");
         }
-//        if (!targetNotebookDir.mkdir()) {
-//            throw new PromptException("目标笔记本无法创建");
-//        }
+
         List<NoteVo> noteVoList = listNotes(srcNotebookName).getData();
         if (!FileUtil.renameFileOrDir(srcNotebookDir, targetNotebookDir)) {
             throw new PromptException("重命名笔记本失败");
@@ -626,47 +601,124 @@ public class NoteServiceImpl implements INoteService {
         return ServerResponse.buildSuccessResponse();
     }
 
+//    private void validateInputs(String srcNotebook, String srcTitle, String targetNotebook, String targetTitle) {
+//        if (srcNotebook.equalsIgnoreCase(targetNotebook) && srcTitle.equalsIgnoreCase(targetTitle)) {
+//            throw new IllegalArgumentException("Source and target should be different.");
+//        }
+//        if (StringUtils.isAnyBlank(srcNotebook, srcTitle, targetNotebook, targetTitle)) {
+//            throw new IllegalArgumentException("Inputs should not be blank.");
+//        }
+//    }
+//
+//    private void updateData(String srcNotebook, String srcTitle, String targetNotebook, String targetTitle, String srcRelativeName, String targetRelativeName, String content){
+//        NoteDo noteDo = noteRepository.findByUsernameAndNotebookNameAndNoteTitle(getUsername(),srcNotebook,srcTitle);
+//        if(noteDo == null)
+//            throw new IllegalArgumentException();
+//        noteDo.setNotebookName(targetNotebook).setNoteTitle(targetTitle);
+//        noteRepository.save(noteDo);
+//        GitUtil.mvAndCommit(getOrCreateUserGit(), srcRelativeName, targetRelativeName);
+//        invalidateCache(buildUserNoteKey(srcNotebook, srcTitle));
+//        userNoteCache.put(buildUserNoteKey(targetNotebook, targetTitle), content);
+//
+//    }
+//    @Override
+//    public ServerResponse moveNote(String srcNotebook, String srcTitle, String targetNotebook, String targetTitle) {
+//        // src != target
+//        validateInputs(srcNotebook, srcTitle, targetNotebook, targetTitle);
+//
+//        ServerResponse<String> response = getNote(srcNotebook, srcTitle);
+//        if (!response.isSuccess()) {
+//            return response;
+//        }
+//        String content = response.getData();
+//        String targetRelativeName = getRelativeFileName(targetNotebook, targetTitle);
+//
+//        File targetFile = new File(getOrCreateUserNotebookDir(), targetRelativeName);
+//        if (targetFile.exists()) {
+//            throw new RuntimeException("Note already exists");
+//        }
+//
+//        String srcRelativeName = getRelativeFileName(srcNotebook, srcTitle);
+//        File srcFile = new File(getOrCreateUserNotebookDir(), srcRelativeName);
+//        fileService.deleteFile(srcFile);
+//        fileService.writeStringToFile(content, targetFile);
+//        NotePreviewInfo previewInfo = userNotePreviewCache.get(buildUserNoteKey(srcNotebook, srcTitle, getUsername()));
+//        // 先移动记录
+//        if (previewInfo.getArticleId() != null) {
+//            articleService.moveArticle(previewInfo.getArticleId(), targetNotebook, targetTitle);
+//        }
+//        // update database
+//        updateData(srcNotebook,srcTitle,targetNotebook,targetTitle,srcRelativeName,targetRelativeName,content);
+//        return ServerResponse.buildSuccessResponse();
+//    }
+
     @Override
     public ServerResponse moveNote(String srcNotebook, String srcTitle, String targetNotebook, String targetTitle) {
-        // src != target
-        if (srcNotebook.equalsIgnoreCase(targetNotebook) && srcTitle.equalsIgnoreCase(targetTitle)) {
-            throw new IllegalArgumentException();
-        }
-        if (StringUtils.isAnyBlank(srcNotebook, srcTitle, targetNotebook, targetTitle)) {
-            throw new IllegalArgumentException();
-        }
-        ServerResponse<String> response = getNote(srcNotebook, srcTitle);
-        if (!response.isSuccess()) {
-            return response;
-        }
-        String content = response.getData();
+        validateInputs(srcNotebook, srcTitle, targetNotebook, targetTitle);
+
+        String srcRelativeName = getRelativeFileName(srcNotebook, srcTitle);
         String targetRelativeName = getRelativeFileName(targetNotebook, targetTitle);
-        File targetFile = new File(getOrCreateUserNotebookDir(), targetRelativeName);
-        if (targetFile.exists()) {
+
+        if (isTargetFileExists(targetRelativeName)) {
             throw new RuntimeException("Note already exists");
         }
-        String srcRelativeName = getRelativeFileName(srcNotebook, srcTitle);
+
+        String content = getNoteContentOrThrow(srcNotebook, srcTitle);
+
+        moveFilesAndCache(srcRelativeName, targetRelativeName, content,srcNotebook,srcTitle,targetNotebook,targetTitle);
+
+        moveDatabaseRecords(srcNotebook, srcTitle, targetNotebook, targetTitle);
+
+        return ServerResponse.buildSuccessResponse();
+    }
+
+    private void validateInputs(String srcNotebook, String srcTitle, String targetNotebook, String targetTitle) {
+        if (srcNotebook.equalsIgnoreCase(targetNotebook) && srcTitle.equalsIgnoreCase(targetTitle)) {
+            throw new IllegalArgumentException("Source and target should be different.");
+        }
+        if (StringUtils.isAnyBlank(srcNotebook, srcTitle, targetNotebook, targetTitle)) {
+            throw new IllegalArgumentException("Inputs should not be blank.");
+        }
+    }
+
+    private boolean isTargetFileExists(String targetRelativeName) {
+        File targetFile = new File(getOrCreateUserNotebookDir(), targetRelativeName);
+        return targetFile.exists();
+    }
+
+    private String getNoteContentOrThrow(String srcNotebook, String srcTitle) {
+        ServerResponse<String> response = getNote(srcNotebook, srcTitle);
+        if (!response.isSuccess()) {
+            throw new RuntimeException("Failed to retrieve source note.");
+        }
+        return response.getData();
+    }
+
+    private void moveFilesAndCache(String srcRelativeName, String targetRelativeName, String content,
+                                   String srcNotebook, String srcTitle, String targetNotebook, String targetTitle) {
         File srcFile = new File(getOrCreateUserNotebookDir(), srcRelativeName);
         fileService.deleteFile(srcFile);
+
+        File targetFile = new File(getOrCreateUserNotebookDir(), targetRelativeName);
         fileService.writeStringToFile(content, targetFile);
+
         NotePreviewInfo previewInfo = userNotePreviewCache.get(buildUserNoteKey(srcNotebook, srcTitle, getUsername()));
-        // 先移动记录
         if (previewInfo.getArticleId() != null) {
             articleService.moveArticle(previewInfo.getArticleId(), targetNotebook, targetTitle);
         }
 
-        // update database
-        NoteDo noteDo = noteRepository.findByUsernameAndNotebookNameAndNoteTitle(getUsername(),srcNotebook,srcTitle);
-        if(noteDo == null)
-            throw new IllegalArgumentException();
-        noteDo.setNotebookName(targetNotebook).setNoteTitle(targetTitle);
-        noteRepository.save(noteDo);
-        // 由于noteId没发生变更，所以不必更改noteTag数据表。
-
         GitUtil.mvAndCommit(getOrCreateUserGit(), srcRelativeName, targetRelativeName);
         invalidateCache(buildUserNoteKey(srcNotebook, srcTitle));
         userNoteCache.put(buildUserNoteKey(targetNotebook, targetTitle), content);
-        return ServerResponse.buildSuccessResponse();
+    }
+
+    private void moveDatabaseRecords(String srcNotebook, String srcTitle, String targetNotebook, String targetTitle) {
+        NoteDo noteDo = noteRepository.findByUsernameAndNotebookNameAndNoteTitle(getUsername(),srcNotebook,srcTitle);
+        if(noteDo == null) {
+            throw new IllegalArgumentException("Source note not found in database.");
+        }
+        noteDo.setNotebookName(targetNotebook).setNoteTitle(targetTitle);
+        noteRepository.save(noteDo);
     }
 
     @Override
