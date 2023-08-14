@@ -490,6 +490,8 @@ export default {
       })
     },
 
+    
+
     init() {
       const options = {
         counter: {
@@ -507,7 +509,7 @@ export default {
 
           this.vditor.vditor.lute.SetJSRenderers({
             renderers: {
-              Md2VditorIRDOM: {   // 请根据不同的模式选择不同的渲染对象
+              Md2VditorIRDOM: {   // 根据不同的模式选择不同的渲染对象
                 renderLink: (node, entering) => {
                   if (entering) {
                     // console.log('enter renderLink')
@@ -523,7 +525,6 @@ export default {
                     else
                       return [`<a style='color: dodgerblue;cursor: pointer' href="${this.refPath}" value="${this.refPath}" onclick="jumptoLink(this)">${node.Text()}</a>`, 2]
                   }
-
                 },
                 renderLinkDest: (node, entering) => {
                   if (entering) {
@@ -583,7 +584,6 @@ export default {
               },
             }
           })
-
         },
         input: () => {
           this.contentModfied = (this.vditor.getValue() !== this.originContent);
