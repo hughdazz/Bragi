@@ -576,21 +576,33 @@ export default {
     },
     refreshNotebookList(notebookName) {
       // this.clearRenameInfo();
+
+      // reqNotePostSave(this.config).then(res => {
+      //   res = res.data;
+      //   if (res.code === 0) {
+      //     this.notebookList = res.data;
+      //     console.log('this.notebookList', this.notebookList);
+      //     if (notebookName) {
+      //       this.doSwitchNotebook(notebookName);
+      //       return;
+      //     }
+      //     this.updateCurNotebookInfo()
+      //   }
+      // })
+
       axios.get(global.HOST_URL + "/note", this.config).then(res => {
         res = res.data;
         if (res.code === 0) {
           this.notebookList = res.data;
-
           console.log('this.notebookList', this.notebookList);
-
           if (notebookName) {
             this.doSwitchNotebook(notebookName);
             return;
-
           }
           this.updateCurNotebookInfo()
         }
       })
+
       axios.get(global.HOST_URL + "/delnote", this.config).then(res => {
         res = res.data;
         if (res.code === 0) {

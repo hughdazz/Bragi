@@ -1,3 +1,11 @@
+/*
+ * @Author: JfanLiu 1300083451@qq.com
+ * @Date: 2023-08-14 12:21:32
+ * @LastEditors: JfanLiu 1300083451@qq.com
+ * @LastEditTime: 2023-08-14 12:36:04
+ * @FilePath: \Bragi\Bragi-frontend\src\api\axiosRequest.js
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 const URL = 'http://{{server_ip}}:8080';
