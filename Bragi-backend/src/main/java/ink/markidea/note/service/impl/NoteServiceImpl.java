@@ -810,32 +810,26 @@ public class NoteServiceImpl implements INoteService {
         List<NoteRefDo> noteRefDos = noteRefRepository.findAllByUsername(getUsername());
         List<NoteDo> noteDos = noteRepository.findAllByUsername(getUsername());
 
-        List<RefGraphVo.Node> nodes = new ArrayList<>();
-        List<RefGraphVo.Line> lines = new ArrayList<>();
+        List<RefGraphVo.Node> nodesList = new ArrayList<>();
+        List<RefGraphVo.Line> linesList = new ArrayList<>();
 
         Set<String> ns = new HashSet<>();
 
         for(NoteRefDo noteRefDo : noteRefDos) {
-            lines.add(new RefGraphVo.Line().setFrom(noteRefDo.getNoteId().toString()).setTo(noteRefDo.getRefNoteId().toString()));
+            linesList.add(new RefGraphVo.Line().setFrom(noteRefDo.getNoteId().toString()).setTo(noteRefDo.getRefNoteId().toString()));
             ns.add(noteRefDo.getNoteId().toString());
             ns.add(noteRefDo.getRefNoteId().toString());
         }
         for(NoteDo noteDo : noteDos) {
             if(ns.contains(noteDo.getId().toString()))
-                nodes.add(new RefGraphVo.Node().setId(noteDo.getId().toString()).setText(noteDo.getNoteTitle()));
+                nodesList.add(new RefGraphVo.Node().setId(noteDo.getId().toString()).setText(noteDo.getNoteTitle()));
         }
 
 
-        refGraphVo.setNodes(nodes);
-        refGraphVo.setLines(lines);
+        refGraphVo.setNodes(nodesList);
+        refGraphVo.setLines(linesList);
         return refGraphVo;
     }
-
-
-//    public void updateNotesNotebookName(String srcNotebook, String targetNotebook)
-//    {
-//        noteRepository.updateNotebookName(getUsername(),srcNotebook,targetNotebook);
-//    }
 
     public ServerResponse addNoteTag(String notebookName, String noteName, String tagName) {
         try {

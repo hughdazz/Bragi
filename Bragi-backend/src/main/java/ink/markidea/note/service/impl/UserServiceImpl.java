@@ -76,6 +76,19 @@ public class UserServiceImpl implements IUserService {
             return ServerResponse.buildSuccessResponse(code);//返回正确响应，并传回验证码
         }
     }
+
+    @PostConstruct
+    private void initAdminUser(){
+        UserDo userDO = userRepository.findFirstByStatus(0);
+        if (userDO == null){
+            UserDo adminUser = new UserDo().setUsername(adminUsername)
+                    .setPassword(MD5Util.MD5EncodeUtf8(adminPassword))
+                    .setEmailnumber(emailNumber)
+                    .setStatus(UserConstant.ADMIN_USER);
+            userRepository.save(adminUser);
+        }
+    }
+
     @Override
     public ServerResponse<String> sendOutEmailRetreievePwd(String email) throws Exception {
         if(userRepository.findByEmailnumber(email) == null){
@@ -88,18 +101,6 @@ public class UserServiceImpl implements IUserService {
             String msg = "<h4>Bragi找回密码</h4>" + "<p style='color:#F00'>您的验证码为:" + code + "</p>";
             emailUtils.sendEmail(email, subject, msg);
             return ServerResponse.buildSuccessResponse(code);//返回正确响应，并传回验证码
-        }
-    }
-
-    @PostConstruct
-    private void initAdminUser(){
-        UserDo userDO = userRepository.findFirstByStatus(0);
-        if (userDO == null){
-            UserDo adminUser = new UserDo().setUsername(adminUsername)
-                    .setPassword(MD5Util.MD5EncodeUtf8(adminPassword))
-                    .setEmailnumber(emailNumber)
-                    .setStatus(UserConstant.ADMIN_USER);
-            userRepository.save(adminUser);
         }
     }
 
@@ -134,72 +135,8 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ServerResponse validate(String username, String token){
-        UserVo userVo = userCache.getIfPresent(username);
-        if (userVo == null || !token.equals(userVo.getToken())){
-            return ServerResponse.buildErrorResponse("Invalid token");
-        }else {
-            return ServerResponse.buildSuccessResponse();
-        }
-    }
-
-
-    @Override
-    public boolean checkAdminUser(String username, String token) {
-        UserVo userVo = userCache.getIfPresent(username);
-        if (userVo == null || !token.equals(userVo.getToken())){
-            return false;
-        }
-
-        return userVo.getType() == UserConstant.ADMIN_USER;
-    }
-
-    @Override
     public ServerResponse logout() {
         userCache.invalidate(getUsername());
-        return ServerResponse.buildSuccessResponse();
-    }
-
-    @Override
-    public ServerResponse<String> register(String username, String password, String emailnumber, String code, String codesent){
-        if (StringUtils.isAnyBlank(username, password,emailnumber,code)){
-            return ServerResponse.buildErrorResponse("参数不能为空");
-        }
-        //验证新密码格式是否合规
-        String regex = "^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=_!])(?!.*\\s).{6,}";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(password);
-
-        //验证码不对
-        if(!code.equals(codesent)){
-            return ServerResponse.buildErrorResponse("验证码错误");
-        }
-        else {
-            if(userRepository.findByUsername(username) != null){
-                return ServerResponse.buildErrorResponse("用户名已存在！");
-            }
-            else if(!matcher.matches()){//后端二次校验密码格式
-                return ServerResponse.buildErrorResponse("密码格式错误！");
-            }
-            else {
-                //存到数据库中
-                UserDo userDO = userRepository.save(new UserDo()
-                        .setUsername(username)
-                        .setPassword(MD5Util.MD5EncodeUtf8(password))
-                        .setEmailnumber(emailnumber));//把邮箱也存入数据库中，邮箱也是唯一的
-            }
-        }
-        return ServerResponse.buildSuccessResponse("");
-    }
-
-    //无需旧密码，需要账号
-    @Override
-    public ServerResponse updatePassword(String emailNumber,String newPassword)
-    {
-        UserDo userDo = userRepository.findByEmailnumber(emailNumber);
-        String newEncodedPassword = MD5Util.MD5EncodeUtf8(newPassword);
-        userDo.setPassword(newEncodedPassword);
-        userRepository.save(userDo);
         return ServerResponse.buildSuccessResponse();
     }
 
@@ -234,6 +171,39 @@ public class UserServiceImpl implements IUserService {
 
     }
 
+    @Override
+    public ServerResponse validate(String username, String token){
+        UserVo userVo = userCache.getIfPresent(username);
+        if (userVo == null || !token.equals(userVo.getToken())){
+            return ServerResponse.buildErrorResponse("Invalid token");
+        }else {
+            return ServerResponse.buildSuccessResponse();
+        }
+    }
+
+
+    @Override
+    public boolean checkAdminUser(String username, String token) {
+        UserVo userVo = userCache.getIfPresent(username);
+        if (userVo == null || !token.equals(userVo.getToken())){
+            return false;
+        }
+
+        return userVo.getType() == UserConstant.ADMIN_USER;
+    }
+
+    //无需旧密码，需要账号
+    @Override
+    public ServerResponse updatePassword(String emailNumber,String newPassword)
+    {
+        UserDo userDo = userRepository.findByEmailnumber(emailNumber);
+        String newEncodedPassword = MD5Util.MD5EncodeUtf8(newPassword);
+        userDo.setPassword(newEncodedPassword);
+        userRepository.save(userDo);
+        return ServerResponse.buildSuccessResponse();
+    }
+
+
     private String getUsername(){
         return ThreadLocalUtil.getUsername();
     }
@@ -251,7 +221,6 @@ public class UserServiceImpl implements IUserService {
         } else {
             return JsonUtil.stringToObj(editorConfigStr, EditorConfigDto.class);
         }
-
     }
 
     @Override
@@ -266,6 +235,38 @@ public class UserServiceImpl implements IUserService {
     public Page<UserVo> getUserList(Integer page, Integer size) {
         return userRepository.findAll(PageRequest.of(page, size)).map(userDo -> userDo.setPassword(null))
                 .map(userDo -> new UserVo().setUsername(userDo.getUsername()).setType(userDo.getStatus()));
+    }
+
+    @Override
+    public ServerResponse<String> register(String username, String password, String emailnumber, String code, String codesent){
+        if (StringUtils.isAnyBlank(username, password,emailnumber,code)){
+            return ServerResponse.buildErrorResponse("参数不能为空");
+        }
+        //验证新密码格式是否合规
+        String regex = "^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=_!])(?!.*\\s).{6,}";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(password);
+
+        //验证码不对
+        if(!code.equals(codesent)){
+            return ServerResponse.buildErrorResponse("验证码错误");
+        }
+        else {
+            if(userRepository.findByUsername(username) != null){
+                return ServerResponse.buildErrorResponse("用户名已存在！");
+            }
+            else if(!matcher.matches()){//后端二次校验密码格式
+                return ServerResponse.buildErrorResponse("密码格式错误！");
+            }
+            else {
+                //存到数据库中
+                UserDo userDO = userRepository.save(new UserDo()
+                        .setUsername(username)
+                        .setPassword(MD5Util.MD5EncodeUtf8(password))
+                        .setEmailnumber(emailnumber));//把邮箱也存入数据库中，邮箱也是唯一的
+            }
+        }
+        return ServerResponse.buildSuccessResponse("");
     }
 
 }
